@@ -27,6 +27,7 @@ import vahy.paperGenerics.RamcpNodeEvaluator;
 import vahy.paperGenerics.benchmark.PaperBenchmark;
 import vahy.paperGenerics.benchmark.PaperBenchmarkingPolicy;
 import vahy.paperGenerics.benchmark.PaperPolicyResults;
+import vahy.paperGenerics.experiment.EvaluatorType;
 import vahy.paperGenerics.policy.PaperPolicySupplier;
 import vahy.paperGenerics.policy.TrainablePaperPolicySupplier;
 import vahy.paperGenerics.policy.riskSubtree.strategiesProvider.StrategiesProvider;
@@ -344,11 +345,11 @@ public class Experiment {
     }
 
     private PaperNodeEvaluator<RandomWalkAction, RandomWalkProbabilities, PaperMetadata<RandomWalkAction>, RandomWalkState> resolveEvaluator(EvaluatorType evaluatorType,
-                                                                                                                                                            SplittableRandom random,
-                                                                                                                                                            ExperimentSetup experimentSetup,
-                                                                                                                                                            DoubleScalarRewardAggregator rewardAggregator,
-                                                                                                                                                            SearchNodeBaseFactoryImpl<RandomWalkAction, DoubleVector, RandomWalkProbabilities, PaperMetadata<RandomWalkAction>, RandomWalkState> searchNodeFactory,
-                                                                                                                                                            TrainableApproximator<DoubleVector> approximator) {
+                                                                                                                                             SplittableRandom random,
+                                                                                                                                             ExperimentSetup experimentSetup,
+                                                                                                                                             DoubleScalarRewardAggregator rewardAggregator,
+                                                                                                                                             SearchNodeBaseFactoryImpl<RandomWalkAction, DoubleVector, RandomWalkProbabilities, PaperMetadata<RandomWalkAction>, RandomWalkState> searchNodeFactory,
+                                                                                                                                             TrainableApproximator<DoubleVector> approximator) {
         switch (evaluatorType) {
             case MONTE_CARLO:
                 return new MonteCarloNodeEvaluator<>(

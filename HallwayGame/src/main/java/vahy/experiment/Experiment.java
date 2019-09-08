@@ -27,6 +27,8 @@ import vahy.paperGenerics.RamcpNodeEvaluator;
 import vahy.paperGenerics.benchmark.PaperBenchmark;
 import vahy.paperGenerics.benchmark.PaperBenchmarkingPolicy;
 import vahy.paperGenerics.benchmark.PaperPolicyResults;
+import vahy.paperGenerics.experiment.EvaluatorType;
+import vahy.paperGenerics.experiment.SelectorType;
 import vahy.paperGenerics.policy.PaperPolicySupplier;
 import vahy.paperGenerics.policy.TrainablePaperPolicySupplier;
 import vahy.paperGenerics.policy.environment.EnvironmentPolicySupplier;
@@ -42,7 +44,6 @@ import vahy.paperGenerics.reinforcement.learning.ReplayBufferTrainer;
 import vahy.paperGenerics.reinforcement.learning.tf.TFModel;
 import vahy.riskBasedSearch.RiskBasedSelector;
 import vahy.riskBasedSearch.RiskBasedSelectorVahy;
-import vahy.riskBasedSearch.SelectorType;
 import vahy.utils.EnumUtils;
 import vahy.utils.ImmutableTuple;
 import vahy.vizualiation.ProgressTrackerSettings;
@@ -160,7 +161,7 @@ public class Experiment {
             experimentSetup.getTreeUpdateConditionFactory(),
             strategiesProvider);
 
-        var progressTrackerSettings = new ProgressTrackerSettings(true, false, false, false);
+        var progressTrackerSettings = new ProgressTrackerSettings(true, true, false, false);
 
         var trainer = getAbstractTrainer(
             experimentSetup.getTrainerAlgorithm(),
@@ -357,11 +358,11 @@ public class Experiment {
     }
 
     private PaperNodeEvaluator<HallwayAction, EnvironmentProbabilities, PaperMetadata<HallwayAction>, HallwayStateImpl> resolveEvaluator(EvaluatorType evaluatorType,
-                                                SplittableRandom random,
-                                                ExperimentSetup experimentSetup,
-                                                DoubleScalarRewardAggregator rewardAggregator,
-                                                SearchNodeBaseFactoryImpl<HallwayAction, DoubleVector, EnvironmentProbabilities, PaperMetadata<HallwayAction>, HallwayStateImpl> searchNodeFactory,
-                                                TrainableApproximator<DoubleVector> approximator) {
+                                                                                                                                         SplittableRandom random,
+                                                                                                                                         ExperimentSetup experimentSetup,
+                                                                                                                                         DoubleScalarRewardAggregator rewardAggregator,
+                                                                                                                                         SearchNodeBaseFactoryImpl<HallwayAction, DoubleVector, EnvironmentProbabilities, PaperMetadata<HallwayAction>, HallwayStateImpl> searchNodeFactory,
+                                                                                                                                         TrainableApproximator<DoubleVector> approximator) {
         switch (evaluatorType) {
             case MONTE_CARLO:
                 return new MonteCarloNodeEvaluator<>(
