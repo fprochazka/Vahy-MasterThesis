@@ -26,12 +26,12 @@ public class PaperPolicyResults<
     private final PaperBenchmarkingPolicy<TAction, TPlayerObservation, TOpponentObservation, TSearchNodeMetadata, TState> benchmarkingPolicy;
     private final List<EpisodeResults<TAction, TPlayerObservation, TOpponentObservation, TState>> episodeList;
     private final CalculatedResultStatistics calculatedResultStatistics;
-    private final long benchmarkingMilliseconds;
+    private final double benchmarkingMilliseconds;
 
     public PaperPolicyResults(PaperBenchmarkingPolicy<TAction, TPlayerObservation, TOpponentObservation, TSearchNodeMetadata, TState> benchmarkingPolicy,
                               List<EpisodeResults<TAction, TPlayerObservation, TOpponentObservation, TState>> episodeList,
                               CalculatedResultStatistics calculatedResultStatistics,
-                              long benchmarkingMilliseconds) {
+                              double benchmarkingMilliseconds) {
         this.benchmarkingPolicy = benchmarkingPolicy;
         this.episodeList = episodeList;
         this.calculatedResultStatistics = calculatedResultStatistics;
@@ -46,7 +46,7 @@ public class PaperPolicyResults<
         return episodeList;
     }
 
-    public long getBenchmarkingMilliseconds() {
+    public double getBenchmarkingMilliseconds() {
         return benchmarkingMilliseconds;
     }
 

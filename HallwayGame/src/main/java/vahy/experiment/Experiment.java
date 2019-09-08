@@ -265,12 +265,12 @@ public class Experiment {
         logger.info("Benchmarking took [{}] milliseconds", benchmarkingTimeInMs);
 
         for (var policyEntry : policySupplierList) {
-            var nnResults = policyResultList
-                .stream()
-                .filter(x -> x.getBenchmarkingPolicy().getPolicyName().equals(policyEntry.getPolicyName()))
-                .findFirst()
-                .get();
-            logger.info("[{}]", nnResults.getCalculatedResultStatistics().printToLog());
+//            var nnResults = policyResultList
+//                .stream()
+//                .filter(x -> x.getBenchmarkingPolicy().getPolicyName().equals(policyEntry.getPolicyName()))
+//                .findFirst()
+//                .get();
+//            logger.info("[{}]", nnResults.getCalculatedResultStatistics().printToLog());
             logger.info("Training time: [{}]ms", trainingTimeInMs);
             logger.info("Total time: [{}]ms", trainingTimeInMs + benchmarkingTimeInMs);
         }

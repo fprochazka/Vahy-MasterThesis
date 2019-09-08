@@ -8,6 +8,7 @@ import vahy.api.model.observation.Observation;
 import vahy.impl.model.observation.DoubleVector;
 import vahy.paperGenerics.PaperMetadata;
 import vahy.paperGenerics.PaperState;
+import vahy.paperGenerics.experiment.PaperPolicyResults;
 import vahy.paperGenerics.policy.PaperPolicySupplier;
 import vahy.paperGenerics.reinforcement.episode.EpisodeGameSampler;
 import vahy.paperGenerics.reinforcement.episode.EpisodeResults;
@@ -41,7 +42,7 @@ public class PaperBenchmark<
     }
 
     public List<PaperPolicyResults<TAction, TPlayerObservation, TOpponentObservation, TSearchNodeMetadata, TState>> runBenchmark(int episodeCount,
-                                                                                                                                          int stepCountLimit) {
+                                                                                                                                 int stepCountLimit) {
         logger.info("Running benchmark for [{}] iterations", episodeCount);
         List<PaperPolicyResults<TAction, TPlayerObservation, TOpponentObservation, TSearchNodeMetadata, TState>> results = new ArrayList<>();
         for (PaperBenchmarkingPolicy<TAction, TPlayerObservation, TOpponentObservation, TSearchNodeMetadata, TState> benchmarkingPolicy : benchmarkingPolicyList) {
@@ -53,11 +54,11 @@ public class PaperBenchmark<
                 progressTrackerSettings,
                 stepCountLimit,
                 1);
-            long start = System.nanoTime();
+            long start = System.currentTimeMillis();
             List<EpisodeResults<TAction, TPlayerObservation, TOpponentObservation, TState>> resultList = gameSampler.sampleEpisodes(episodeCount);
-            long end = System.nanoTime();
+            long end = System.currentTimeMillis();
             logger.info("Benchmarking [{}] policy took [{}] nanosecond", benchmarkingPolicy.getPolicyName(), end - start);
-            results.add(new PaperPolicyResults<>(benchmarkingPolicy, resultList, (end - start) / (double) episodeCount));
+            results.add(new PaperPolicyResults<TAction, TPlayerObservation, TOpponentObservation, TSearchNodeMetadata, TState>(benchmarkingPolicy, resultList, null, (end - start) / (double) episodeCount));
         }
         return results;
     }
