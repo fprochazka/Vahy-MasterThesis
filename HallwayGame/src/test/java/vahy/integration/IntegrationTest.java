@@ -55,8 +55,8 @@ public class IntegrationTest {
 
         var results = experiment.getResults().get(0);
 
-        Assert.assertTrue(results.getAverageReward() >= minExpectedReward, "Avg reward is: [" + results.getAverageReward() + "] but expected at least: [" + minExpectedReward + "]");
-        Assert.assertTrue(results.getRiskHitRatio() <= maxRiskHitRatio, "Risk hit ratio is: [" + results.getRiskHitRatio() + "] but expected at most: [" + maxRiskHitRatio + "]");
+        Assert.assertTrue(results.getCalculatedResultStatistics().getTotalPayoffAverage() >= minExpectedReward, "Avg reward is: [" + results.getCalculatedResultStatistics().getTotalPayoffAverage() + "] but expected at least: [" + minExpectedReward + "]");
+        Assert.assertTrue(results.getCalculatedResultStatistics().getRiskHitRatio() <= maxRiskHitRatio, "Risk hit ratio is: [" + results.getCalculatedResultStatistics().getRiskHitRatio() + "] but expected at most: [" + maxRiskHitRatio + "]");
     }
 
     public static ImmutableTuple<GameConfig, ExperimentSetup> createExperiment_03() {

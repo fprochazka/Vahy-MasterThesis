@@ -14,7 +14,6 @@ import vahy.game.HallwayGameInitialInstanceSupplier;
 import vahy.game.NotValidGameStringRepresentationException;
 import vahy.impl.model.observation.DoubleVector;
 import vahy.impl.model.reward.DoubleScalarRewardAggregator;
-import vahy.impl.search.node.SearchNodeImpl;
 import vahy.impl.search.node.factory.SearchNodeBaseFactoryImpl;
 import vahy.paperGenerics.MonteCarloNodeEvaluator;
 import vahy.paperGenerics.PaperMetadata;
@@ -26,8 +25,8 @@ import vahy.paperGenerics.PaperTreeUpdater;
 import vahy.paperGenerics.RamcpNodeEvaluator;
 import vahy.paperGenerics.benchmark.PaperBenchmark;
 import vahy.paperGenerics.benchmark.PaperBenchmarkingPolicy;
-import vahy.paperGenerics.benchmark.PaperPolicyResults;
 import vahy.paperGenerics.experiment.EvaluatorType;
+import vahy.paperGenerics.experiment.PaperPolicyResults;
 import vahy.paperGenerics.experiment.SelectorType;
 import vahy.paperGenerics.policy.PaperPolicySupplier;
 import vahy.paperGenerics.policy.TrainablePaperPolicySupplier;
@@ -262,8 +261,8 @@ public class Experiment {
         long start = System.currentTimeMillis();
         var policyResultList = benchmark.runBenchmark(experimentSetup.getEvalEpisodeCount(), experimentSetup.getMaximalStepCountBound());
         long end = System.currentTimeMillis();
-        var benchmarkingTime = end - start;
-        logger.info("Benchmarking took [{}] milliseconds", benchmarkingTime);
+        var benchmarkingTimeInMs = end - start;
+        logger.info("Benchmarking took [{}] milliseconds", benchmarkingTimeInMs);
 
         for (var policyEntry : policySupplierList) {
             var nnResults = policyResultList
@@ -271,19 +270,10 @@ public class Experiment {
                 .filter(x -> x.getBenchmarkingPolicy().getPolicyName().equals(policyEntry.getPolicyName()))
                 .findFirst()
                 .get();
-            logger.info("Average reward: [{}]", nnResults.getAverageReward());
-            logger.info("Stdev reward: [{}]", nnResults.getStdevReward());
-            logger.info("Millis per episode: [{}]", nnResults.getAverageMillisPerEpisode());
-            logger.info("Avg episode length [{}]", nnResults.getEpisodeList().stream().map(x -> x.getEpisodeHistoryList().size()).mapToDouble(x -> x).sum() / nnResults.getEpisodeList().size());
-            logger.info("Avg episode length [{}]", nnResults.getEpisodeList().stream().map(x -> x.getEpisodeStateRewardReturnList().size()).mapToDouble(x -> x).sum() / nnResults.getEpisodeList().size());
-            logger.info("Total expanded nodes: [{}]", SearchNodeImpl.nodeInstanceId);
-            logger.info("RiskHit ratio: [{}]", nnResults.getRiskHitRatio());
-            logger.info("Stdev riskHit: [{}]", nnResults.getStdevRisk());
-            logger.info("Kill counter: [{}]", nnResults.getRiskHitCounter());
+            logger.info("[{}]", nnResults.getCalculatedResultStatistics().printToLog());
             logger.info("Training time: [{}]ms", trainingTimeInMs);
-            logger.info("Total time: [{}]ms", trainingTimeInMs + nnResults.getEpisodeList().size() * nnResults.getAverageMillisPerEpisode());
+            logger.info("Total time: [{}]ms", trainingTimeInMs + benchmarkingTimeInMs);
         }
-
         return policyResultList;
     }
 

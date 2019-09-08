@@ -13,7 +13,6 @@ import vahy.environment.RandomWalkSetup;
 import vahy.environment.RandomWalkState;
 import vahy.impl.model.observation.DoubleVector;
 import vahy.impl.model.reward.DoubleScalarRewardAggregator;
-import vahy.impl.search.node.SearchNodeImpl;
 import vahy.impl.search.node.factory.SearchNodeBaseFactoryImpl;
 import vahy.opponent.RandomWalkOpponentSupplier;
 import vahy.paperGenerics.MonteCarloNodeEvaluator;
@@ -26,8 +25,8 @@ import vahy.paperGenerics.PaperTreeUpdater;
 import vahy.paperGenerics.RamcpNodeEvaluator;
 import vahy.paperGenerics.benchmark.PaperBenchmark;
 import vahy.paperGenerics.benchmark.PaperBenchmarkingPolicy;
-import vahy.paperGenerics.benchmark.PaperPolicyResults;
 import vahy.paperGenerics.experiment.EvaluatorType;
+import vahy.paperGenerics.experiment.PaperPolicyResults;
 import vahy.paperGenerics.policy.PaperPolicySupplier;
 import vahy.paperGenerics.policy.TrainablePaperPolicySupplier;
 import vahy.paperGenerics.policy.riskSubtree.strategiesProvider.StrategiesProvider;
@@ -172,7 +171,7 @@ public class Experiment {
             experimentSetup.getTreeUpdateConditionFactory(),
             strategiesProvider);
 
-        var progressTrackerSettings = new ProgressTrackerSettings(true, false, false, false);
+        var progressTrackerSettings = new ProgressTrackerSettings(true, true, false, false);
 
         var trainer = getAbstractTrainer(
             experimentSetup.getTrainerAlgorithm(),
@@ -186,7 +185,7 @@ public class Experiment {
             progressTrackerSettings);
 
         long trainingTimeInMs = trainPolicy(experimentSetup, trainer);
-        this.results = evaluatePolicy(random, RandomWalkGameInitialInstanceSupplier, experimentSetup, evaluator, nnBasedPolicySupplier, progressTrackerSettings, trainingTimeInMs);
+        this.results = evaluatePolicy(random, RandomWalkGameInitialInstanceSupplier, experimentSetup, Arrays.asList(new PaperBenchmarkingPolicy<>(evaluator.getClass().getName(), nnBasedPolicySupplier)), progressTrackerSettings, trainingTimeInMs);
         Analyzer.printStatistics(results.get(0).getRewardAndRiskList());
 
         try {
@@ -254,15 +253,13 @@ public class Experiment {
         SplittableRandom random,
         RandomWalkInitialInstanceSupplier randomWalkInitialInstanceSupplier,
         ExperimentSetup experimentSetup,
-        PaperNodeEvaluator<RandomWalkAction, RandomWalkProbabilities, PaperMetadata<RandomWalkAction>, RandomWalkState> nnbasedEvaluator,
-        PaperPolicySupplier<RandomWalkAction, DoubleVector, RandomWalkProbabilities, PaperMetadata<RandomWalkAction>, RandomWalkState> nnBasedPolicySupplier,
+        List<PaperBenchmarkingPolicy<RandomWalkAction, DoubleVector, RandomWalkProbabilities, PaperMetadata<RandomWalkAction>, RandomWalkState>> paperBenchmarkingPolicyList,
         ProgressTrackerSettings progressTrackerSettings,
         long trainingTimeInMs) {
         logger.info("PaperPolicy test starts");
-        String nnBasedPolicyName = "NNBased";
 
         var benchmark = new PaperBenchmark<>(
-            Arrays.asList(new PaperBenchmarkingPolicy<>(nnBasedPolicyName, nnBasedPolicySupplier)),
+            paperBenchmarkingPolicyList,
             new RandomWalkOpponentSupplier(random),
             randomWalkInitialInstanceSupplier,
             progressTrackerSettings
@@ -270,25 +267,19 @@ public class Experiment {
         long start = System.currentTimeMillis();
         var policyResultList = benchmark.runBenchmark(experimentSetup.getEvalEpisodeCount(), experimentSetup.getMaximalStepCountBound());
         long end = System.currentTimeMillis();
-        logger.info("Benchmarking took [{}] milliseconds", end - start);
+        var benchmarkingTimeInMs = end - start;
+        logger.info("Benchmarking took [{}] milliseconds", benchmarkingTimeInMs);
 
-        var nnResults = policyResultList
-            .stream()
-            .filter(x -> x.getBenchmarkingPolicy().getPolicyName().equals(nnBasedPolicyName))
-            .findFirst()
-            .get();
-        logger.info("Average reward: [{}]", nnResults.getAverageReward());
-        logger.info("Stdev reward: [{}]", nnResults.getStdevReward());
-        logger.info("Millis per episode: [{}]", nnResults.getAverageMillisPerEpisode());
-        logger.info("Avg episode length [{}]", nnResults.getEpisodeList().stream().map(x -> x.getEpisodeHistoryList().size()).mapToDouble(x -> x).sum() / nnResults.getEpisodeList().size());
-        logger.info("Avg episode length [{}]", nnResults.getEpisodeList().stream().map(x -> x.getEpisodeStateRewardReturnList().size()).mapToDouble(x -> x).sum() / nnResults.getEpisodeList().size());
-        logger.info("Total expanded nodes: [{}]", SearchNodeImpl.nodeInstanceId);
-        logger.info("RiskHit ratio: [{}]", nnResults.getRiskHitRatio());
-        logger.info("Stdev riskHit: [{}]", nnResults.getStdevRisk());
-        logger.info("Kill counter: [{}]", nnResults.getRiskHitCounter());
-        logger.info("Training time: [{}]ms", trainingTimeInMs);
-        logger.info("Total time: [{}]ms", trainingTimeInMs + nnResults.getEpisodeList().size() * nnResults.getAverageMillisPerEpisode());
-
+        for (var policyEntry : paperBenchmarkingPolicyList) {
+            var nnResults = policyResultList
+                .stream()
+                .filter(x -> x.getBenchmarkingPolicy().getPolicyName().equals(policyEntry.getPolicyName()))
+                .findFirst()
+                .get();
+            logger.info("[{}]", nnResults.getCalculatedResultStatistics().printToLog());
+            logger.info("Training time: [{}]ms", trainingTimeInMs);
+            logger.info("Total time: [{}]ms", trainingTimeInMs + benchmarkingTimeInMs);
+        }
         return policyResultList;
     }
 

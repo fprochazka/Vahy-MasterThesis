@@ -37,7 +37,7 @@ public class RandomWalkExample {
 
     public static ImmutableTuple<RandomWalkSetup, ExperimentSetup> createExperiment1() {
         var startLevel = 5;
-        var diffLevel = 20;
+        var diffLevel = 1000;
         var finishlevel = startLevel + diffLevel;
         var stepPenalty = 1;
         var randomWalkSetup = new RandomWalkSetup(finishlevel, startLevel, stepPenalty, 2, 2, 5, 9, 0.9, 0.8);
