@@ -12,7 +12,7 @@ import vahy.paperGenerics.PaperState;
 import vahy.paperGenerics.policy.PaperPolicySupplier;
 import vahy.paperGenerics.policy.TrainablePaperPolicySupplier;
 import vahy.paperGenerics.reinforcement.episode.EpisodeResults;
-import vahy.paperGenerics.reinforcement.episode.StepRecord;
+import vahy.paperGenerics.reinforcement.episode.PolicyStepRecord;
 import vahy.utils.ImmutableTuple;
 import vahy.vizualiation.ProgressTrackerSettings;
 
@@ -41,7 +41,7 @@ public class FirstVisitMonteCarloTrainer<
     @Override
     protected Map<DoubleVector, MutableDataSample> calculatedVisitedRewards(EpisodeResults<TAction, DoubleVector, TOpponentObservation, TState> paperEpisode) {
         Map<DoubleVector, MutableDataSample> firstVisitSet = new LinkedHashMap<>();
-        List<ImmutableTuple<StateActionReward<TAction, DoubleVector, TOpponentObservation,  TState>, StepRecord>> episodeHistory = paperEpisode.getEpisodeHistoryList();
+        List<ImmutableTuple<StateActionReward<TAction, DoubleVector, TOpponentObservation,  TState>, PolicyStepRecord>> episodeHistory = paperEpisode.getEpisodeHistoryList();
         boolean isRiskHit = paperEpisode.isRiskHit();
         for (int i = 0; i < episodeHistory.size(); i++) {
             if(!episodeHistory.get(i).getFirst().getState().isOpponentTurn()) {

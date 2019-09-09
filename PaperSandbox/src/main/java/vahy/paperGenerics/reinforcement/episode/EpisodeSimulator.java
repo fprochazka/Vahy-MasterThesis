@@ -10,7 +10,6 @@ import vahy.impl.model.ImmutableStateActionRewardTuple;
 import vahy.impl.model.observation.DoubleVector;
 import vahy.paperGenerics.PaperState;
 import vahy.paperGenerics.policy.PaperPolicy;
-import vahy.utils.ImmutableTriple;
 import vahy.utils.ImmutableTuple;
 
 import java.util.ArrayList;
@@ -33,7 +32,7 @@ public class EpisodeSimulator<
         PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> opponentPolicy = episodeImmutableSetup.getOpponentPolicy();
 
         List<StateRewardReturn<TAction, TPlayerObservation, TOpponentObservation, TState>> episodeStateRewardReturnList = new ArrayList<>();
-        List<ImmutableTuple<StateActionReward<TAction, TPlayerObservation, TOpponentObservation, TState>, StepRecord>> episodeHistoryList = new ArrayList<>();
+        List<ImmutableTuple<StateActionReward<TAction, TPlayerObservation, TOpponentObservation, TState>, PolicyStepRecord>> episodeHistoryList = new ArrayList<>();
 
         TState state = episodeImmutableSetup.getInitialState();
         logger.trace("State at the begin of episode: " + System.lineSeparator() + state.readableStringRepresentation());
@@ -45,7 +44,7 @@ public class EpisodeSimulator<
                             PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> playerPolicy,
                             PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> opponentPolicy,
                             List<StateRewardReturn<TAction, TPlayerObservation, TOpponentObservation, TState>> episodeStateRewardReturnList,
-                            List<ImmutableTuple<StateActionReward<TAction, TPlayerObservation, TOpponentObservation, TState>, StepRecord>> episodeHistoryList,
+                            List<ImmutableTuple<StateActionReward<TAction, TPlayerObservation, TOpponentObservation, TState>, PolicyStepRecord>> episodeHistoryList,
                             TState state) {
         try {
             int playerActionCount = 0;
@@ -55,26 +54,26 @@ public class EpisodeSimulator<
                 if(stepsDone >= episodeImmutableSetup.getStepCountLimit()) {
                     break;
                 }
-                var step = makePolicyStep(state, playerPolicy, opponentPolicy);
+                var step = makePolicyStep(true, state, playerPolicy, opponentPolicy);
                 playerActionCount++;
                 stepsDone++;
                 logger.debug("Player's [{}]th action: [{}] getting reward [{}]. ExpectedReward: [{}], Expected risk: [{}], PolicyProbabilities: [{}], PriorProbabilities: [{}]",
                     playerActionCount,
-                    step.getFirst(),
-                    step.getThird().getReward(),
-                    step.getSecond().getRewardPredicted(),
-                    step.getSecond().getRisk(),
-                    Arrays.toString(step.getSecond().getPolicyProbabilities()),
-                    Arrays.toString(step.getSecond().getPriorProbabilities()));
-                episodeStateRewardReturnList.add(step.getThird());
-                episodeHistoryList.add(new ImmutableTuple<>(new ImmutableStateActionRewardTuple<>(state, step.getFirst(), step.getThird().getReward()), step.getSecond()));
-                state = step.getThird().getState();
+                    step.getPlayedAction(),
+                    step.getReward(),
+                    step.getPredictedReward(),
+                    step.getRiskPredicted(),
+                    Arrays.toString(step.getPolicyStepRecord().getPolicyProbabilities()),
+                    Arrays.toString(step.getPolicyStepRecord().getPriorProbabilities()));
+                episodeStateRewardReturnList.add(step.getStateRewardReturn());
+                episodeHistoryList.add(new ImmutableTuple<>(new ImmutableStateActionRewardTuple<>(state, step.getPlayedAction(), step.getReward()), step.getPolicyStepRecord()));
+                state = step.getState();
                 if(!state.isFinalState()) {
-                    step = makePolicyStep(state, opponentPolicy, playerPolicy);
-                    logger.debug("Opponent's [{}]th action: [{}], getting reward [{}]", playerActionCount, step.getFirst(), step.getThird().getReward());
-                    episodeStateRewardReturnList.add(step.getThird());
-                    episodeHistoryList.add(new ImmutableTuple<>(new ImmutableStateActionRewardTuple<>(state, step.getFirst(), step.getThird().getReward()), step.getSecond()));
-                    state = step.getThird().getState();
+                    step = makePolicyStep(false, state, opponentPolicy, playerPolicy);
+                    logger.debug("Opponent's [{}]th action: [{}], getting reward [{}]", playerActionCount, step.getStateRewardReturn(), step.getReward());
+                    episodeStateRewardReturnList.add(step.getStateRewardReturn());
+                    episodeHistoryList.add(new ImmutableTuple<>(new ImmutableStateActionRewardTuple<>(state, step.getPlayedAction(), step.getReward()), step.getPolicyStepRecord()));
+                    state = step.getState();
                 }
                 logger.debug("State at [{}]th timestamp: " + System.lineSeparator() + state.readableStringRepresentation(), playerActionCount);
             }
@@ -112,11 +111,11 @@ public class EpisodeSimulator<
                                 .append(System.lineSeparator())
                                 .append("Policy reward : ")
                                 .append(System.lineSeparator())
-                                .append(x.getSecond().getRewardPredicted())
+                                .append(x.getSecond().getPredictedReward())
                                 .append(System.lineSeparator())
                                 .append("Policy risk : ")
                                 .append(System.lineSeparator())
-                                .append(x.getSecond().getRisk())
+                                .append(x.getSecond().getPredictedRisk())
                                 .append(System.lineSeparator())
                                 .append("Applied action: ")
                                 .append(System.lineSeparator())
@@ -134,26 +133,25 @@ public class EpisodeSimulator<
         }
     }
 
-    private ImmutableTriple<
-        TAction,
-        StepRecord,
-        StateRewardReturn<TAction, TPlayerObservation, TOpponentObservation, TState>> makePolicyStep(TState state,
-                                                                                  PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> onTurnPolicy,
-                                                                                  PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> otherPolicy) {
+    private EpisodeStepRecord<TAction, TPlayerObservation, TOpponentObservation, TState> makePolicyStep(
+            boolean isPlayerMove,
+            TState state,
+            PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> onTurnPolicy,
+            PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> otherPolicy) {
         TAction action = onTurnPolicy.getDiscreteAction(state);
-        StepRecord playerStepRecord = createStepRecord(state, onTurnPolicy);
+        PolicyStepRecord playerStepRecord = createStepRecord(state, onTurnPolicy);
         onTurnPolicy.updateStateOnPlayedActions(Collections.singletonList(action));
         otherPolicy.updateStateOnPlayedActions(Collections.singletonList(action));
         StateRewardReturn<TAction, TPlayerObservation, TOpponentObservation, TState> stateRewardReturn = state.applyAction(action);
-        return new ImmutableTriple<>(action, playerStepRecord, stateRewardReturn);
+        return new EpisodeStepRecord<>(isPlayerMove, action, playerStepRecord, stateRewardReturn);
     }
 
-    private StepRecord createStepRecord(TState state, PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> playerPolicy) {
+    private PolicyStepRecord createStepRecord(TState state, PaperPolicy<TAction, TPlayerObservation, TOpponentObservation, TState> playerPolicy) {
         double[] actionProbabilities = playerPolicy.getActionProbabilityDistribution(state);
         double[] priorProbabilities = playerPolicy.getPriorActionProbabilityDistribution(state);
         double estimatedReward = playerPolicy.getEstimatedReward(state);
         double estimatedRisk = playerPolicy.getEstimatedRisk(state);
-        return new StepRecord(priorProbabilities, actionProbabilities, estimatedReward, estimatedRisk);
+        return new PolicyStepRecord(priorProbabilities, actionProbabilities, estimatedReward, estimatedRisk);
     }
 
 }
